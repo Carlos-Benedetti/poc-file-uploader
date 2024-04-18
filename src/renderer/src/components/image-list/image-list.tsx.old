@@ -1,0 +1,93 @@
+import { useEffect, useState } from 'react'
+import './image-list.css'
+import CiagImage from '../image/image'
+import { FileRef } from '@renderer/services/FileRef'
+
+class UploadsDir {
+  constructor(public folderHandler: FileSystemDirectoryHandle) { }
+  static async init() {
+    const root = await navigator.storage.getDirectory();
+    const folderHandler = await root.getDirectoryHandle("uploads", { create: true });
+    return new UploadsDir(folderHandler)
+  }
+  async getFiles(): Promise<FileSystemFileHandle[]> {
+    const files: FileSystemFileHandle[] = []
+    for await (const handle of this.folderHandler.values()) {
+      if (handle.kind == 'file') {
+        files.push(handle)
+      }
+    }
+    return files
+  }
+  async removeFile(name: string) {
+    await this.folderHandler.removeEntry(name)
+  }
+  async clear() {
+    for await (const fileHandler of await this.getFiles()) {
+      this.removeFile(fileHandler.name)
+    }
+  }
+  async addFile(file: FileSystemFileHandle) {
+    const newHandler = await this.folderHandler.getFileHandle(file.name, { create: true })
+    const writableStream = await newHandler.createWritable()
+    writableStream.write(await file.getFile())
+    writableStream.close()
+
+  }
+}
+
+function ImageList(): JSX.Element {
+  // const [files, setFiles] = useState<Ciag.IFileRef[]>([])
+  const [files, setFiles] = useState<FileSystemFileHandle[]>([])
+  const [folder, setFolder] = useState<UploadsDir>()
+
+  const listContent = async () => {
+
+    // const files = await window.api.directoryContents('/home/bene/Pictures/Webcam')
+    // setFiles(files)
+  }
+
+  const listFiles = async () => {
+    if (!folder) { throw new Error('no folder') }
+    const files = await folder.getFiles()
+    setFiles(files)
+  }
+
+  const selectFile = async () => {
+    if (!folder) { throw new Error('no folder') }
+    const [fileHandle] = await window.showOpenFilePicker();
+    folder.addFile(fileHandle)
+
+  }
+
+
+  useEffect(() => {
+    UploadsDir.init().then(dir => { setFolder(dir), listFiles().then() })
+  })
+
+  return (
+    <div>
+      <button onClick={async () => await folder?.clear()}>Clear All</button>
+      <button onClick={async () => selectFile()}>Select</button>
+      
+      <div className="file-list">
+        {files.map((file, index) => {
+
+          return <div className='file-list'>
+            <p>{file.name}</p>
+            <button onClick={async () => folder?.removeFile(file.name)}>Remove</button>
+          </div>
+        })}
+      </div>
+      {/* <button onClick={() => selectFile().then()}>Select</button> */}
+
+      {/* <div className="image-list">
+        {files.map((file, index) => {
+          return <CiagImage key={index} fileRef={file}></CiagImage>
+        })}
+      </div> */}
+    </div>
+  )
+}
+
+export default ImageList

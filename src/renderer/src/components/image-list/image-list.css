@@ -1,0 +1,17 @@
+.image-list{
+  background-color: rgb(81, 81, 87);
+  display: flex;
+  padding: 1rem;
+}
+.image-list > *{
+  padding: 1rem;  
+}
+.photo-container{
+
+}
+.file-list{
+  background-color: rgb(81, 81, 87);
+  width: 100%;
+  display: flex;
+  justify-content: space-around;
+}
